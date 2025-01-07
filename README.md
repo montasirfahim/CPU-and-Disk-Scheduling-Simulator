@@ -30,6 +30,6 @@ This Java Swing desktop application simulates various CPU and Disk Scheduling al
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/montasirfahim/CPU-Disk-Scheduling-Simulator.git
+   git clone https://github.com/montasirfahim/CPU-and-Disk-Scheduling-Simulator.git
 
 
