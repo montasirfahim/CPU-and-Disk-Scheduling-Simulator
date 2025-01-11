@@ -1,3 +1,5 @@
+import javafx.scene.control.Alert;
+
 public class SchedulersOperations {
     //will contain functions to execute all scheduling algorithms
     public static void cpuAlgorithms(){
@@ -7,4 +9,8 @@ public class SchedulersOperations {
     public static void diskAlgorithms(){
         System.out.println("okay2");
     }
+
+
 }
+
+
