@@ -349,35 +349,58 @@ public class SchedulingSimulatorConstruction extends Application {
                 showErrorDialog("Please Enter Some Processes!");
                 return;
             }
-            if(!isValidInteger(fieldTimeQuantum.getText())){
-                showErrorDialog("Enter Valid Time-Quantum");
-                return;
-            }
+            String selectedAlgo = (String) comboBox.getValue();
+            int timeQuantum;
+            if(selectedAlgo.contentEquals("Round Robin")){
+                if(!isValidInteger(fieldTimeQuantum.getText())){
+                    showErrorDialog("Enter Valid Time-Quantum");
+                    return;
+                }
 
-            int timeQuantum = Integer.parseInt(fieldTimeQuantum.getText());
-            if(timeQuantum <= 0){
-                showErrorDialog("Enter Valid Time-Quantum");
-                return;
+                timeQuantum = Integer.parseInt(fieldTimeQuantum.getText());
+                if(timeQuantum <= 0){
+                    showErrorDialog("Enter Valid Time-Quantum");
+                    return;
+                }
             }
-
 
             List<Processes> copiedList = deepCopyProcesses(processDataList);
             copiedList.sort(Comparator.comparingInt(process -> process.proArrivalTime));
             ObservableList<Processes> resultData = FXCollections.observableArrayList();
 
-            RoundRobin roundRobin = new RoundRobin(copiedList, timeQuantum);
-            roundRobin.runRoundRobin();
-            roundRobin.getAverageResult();
-            lblAvgWaitingTime.setText("Average Waiting Time: " + String.format("%.2f", roundRobin.rrAWT));
-            lblAvgTAT.setText("Average TurnAround Time: " + String.format("%.2f", roundRobin.rrATAT));
-            lblAvgResponseTime.setText("Average Response Time: " + String.format("%.2f", roundRobin.rrART));
-            setVisibilityOfAverageCPUResult(true);
-            roundRobin.printProcessInfo();
+            if(selectedAlgo.contentEquals("Round Robin")){
+                setVisibilityOfAverageCPUResult(false);
+                timeQuantum = Integer.parseInt(fieldTimeQuantum.getText());
+                RoundRobin roundRobin = new RoundRobin(copiedList, timeQuantum);
+                roundRobin.runRoundRobin();
+                roundRobin.getAverageResult();
+                lblAvgWaitingTime.setText("Average Waiting Time: " + String.format("%.2f", roundRobin.rrAWT));
+                lblAvgTAT.setText("Average TurnAround Time: " + String.format("%.2f", roundRobin.rrATAT));
+                lblAvgResponseTime.setText("Average Response Time: " + String.format("%.2f", roundRobin.rrART));
+                setVisibilityOfAverageCPUResult(true);
+                roundRobin.printProcessInfo();
 
-            resultData.clear();
-            resultData.addAll(roundRobin.getProcesses());  //get the processes and add them to the resultData list
-            generateResultTable(cpuPane, resultData); //to generate and display the result table in cpuPane
-            tableView.setVisible(true);
+                resultData.clear();
+                resultData.addAll(roundRobin.getProcesses());  //get the processes and add them to the resultData list
+                generateResultTable(cpuPane, resultData); //to generate and display the result table in cpuPane
+                tableView.setVisible(true);
+            }
+            else if(selectedAlgo.contentEquals("First Come First Served")){
+                setVisibilityOfAverageCPUResult(false);
+                FCFS fcfs = new FCFS(copiedList);
+                fcfs.runFCFS();
+                fcfs.getAverageFCFSResult();
+                lblAvgWaitingTime.setText("Average Waiting Time: " + String.format("%.2f", fcfs.fcfsAWT));
+                lblAvgTAT.setText("Average TurnAround Time: " + String.format("%.2f", fcfs.fcfsATAT));
+                lblAvgResponseTime.setText("Average Response Time: " + String.format("%.2f", fcfs.fcfsART));
+                setVisibilityOfAverageCPUResult(true);
+
+                resultData.clear();
+                resultData.addAll(fcfs.getProcesses());
+                generateResultTable(cpuPane, resultData);
+                tableView.setVisible(true);
+            }
+
 
         }
 
