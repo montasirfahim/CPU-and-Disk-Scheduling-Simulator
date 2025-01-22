@@ -6,12 +6,20 @@ import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
+import javafx.scene.paint.Color;
 import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.*;
+import javafx.scene.shape.Line;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.util.Duration;
+
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.*;
@@ -23,7 +31,8 @@ public class SchedulingSimulatorConstruction extends Application {
     Button cpuButton, diskButton, btnHomeCPU, backButton, addProcessButton, resetButton;
     Button btnBankers, btnPageReplacement, btnMemoryAllocation, btnCalculateCPU;
     Label lblTimeQuantum, lblAddedProcess;
-    Label lblAvgWaitingTime, lblAvgTAT, lblAvgResponseTime;
+    Label lblAvgWaitingTime, lblAvgTAT, lblAvgResponseTime, lblGanttPID, lblGanttPTime, lblGantt;
+    Line topLine, bottomLine, rightLine, leftLine;
     private TextField fieldTimeQuantum;
     ComboBox<String> comboBox;
     TextField processIdField, arrivalTimeField, burstTimeField;
@@ -146,7 +155,7 @@ public class SchedulingSimulatorConstruction extends Application {
         lblTimeQuantum.setVisible(false);
         fieldTimeQuantum.setVisible(false);
 
-        //average result printing
+        //summary of result printing
         lblAvgWaitingTime = new Label("Average Waiting Time: ");
         lblAvgWaitingTime.setLayoutX(880); lblAvgWaitingTime.setLayoutY(195);
         lblAvgWaitingTime.setStyle("-fx-font-weight: bold; -fx-font-size: 12px;");
@@ -156,7 +165,39 @@ public class SchedulingSimulatorConstruction extends Application {
         lblAvgResponseTime = new Label("Average Response Time: ");
         lblAvgResponseTime.setLayoutX(880); lblAvgResponseTime.setLayoutY(245);
         lblAvgResponseTime.setStyle("-fx-font-weight: bold; -fx-font-size: 12px");
+
+        lblGantt = new Label("Gantt Chart: ");
+        lblGantt.setLayoutX(300); lblGantt.setLayoutY(470);
+        lblGantt.setStyle("-fx-font-weight: bold; -fx-font-size: 13px");
+
+        lblGanttPID = new Label();
+        lblGanttPID.setLayoutX(310); lblGanttPID.setLayoutY(500);
+        lblGanttPID.setStyle("-fx-font-weight: bold; -fx-font-size: 12px");
+        lblGanttPTime = new Label();
+        lblGanttPTime.setLayoutX(310); lblGanttPTime.setLayoutY(515);
+
+        double boxX = 300; //Starting X position
+        double boxY = 490; //Starting Y position
+        double boxWidth = 575; //Box width
+        double boxHeight = 50; //Box height (covers both labels)
+
+        topLine = new Line(boxX, boxY, boxX + boxWidth, boxY);
+        bottomLine = new Line(boxX, boxY + boxHeight, boxX + boxWidth, boxY + boxHeight);
+        leftLine = new Line(boxX, boxY, boxX, boxY + boxHeight);
+        rightLine = new Line(boxX + boxWidth, boxY, boxX + boxWidth, boxY + boxHeight);
+
+        topLine.setStroke(Color.BLACK);
+        bottomLine.setStroke(Color.BLACK);
+        leftLine.setStroke(Color.BLACK);
+        rightLine.setStroke(Color.BLACK);
+
+        topLine.setStrokeWidth(1.0);
+        bottomLine.setStrokeWidth(1.0);
+        leftLine.setStrokeWidth(1.0);
+        rightLine.setStrokeWidth(1.0);
+
         setVisibilityOfAverageCPUResult(false);
+
 
         //initial Process Fields
         processIdField = new TextField();
@@ -199,6 +240,8 @@ public class SchedulingSimulatorConstruction extends Application {
                 processIdField, arrivalTimeField, burstTimeField, addProcessButton,resetButton, lblAddedProcess);
         cpuPane.getChildren().addAll(btnCalculateCPU);
         cpuPane.getChildren().addAll(lblAvgWaitingTime, lblAvgTAT, lblAvgResponseTime);
+        cpuPane.getChildren().addAll(lblGanttPID, lblGanttPTime);
+        cpuPane.getChildren().addAll(topLine, bottomLine, leftLine, rightLine, lblGantt);
         ScrollPane scrollPane = new ScrollPane(cpuPane);
         scrollPane.setFitToWidth(true);  //this makes the ScrollPane fit the width of the content
         scrollPane.setPrefHeight(600);
@@ -206,10 +249,16 @@ public class SchedulingSimulatorConstruction extends Application {
     }
 
     private void setVisibilityOfAverageCPUResult(boolean isVisible){
-        //cpuResultPane.setVisible(true);
         lblAvgWaitingTime.setVisible(isVisible);
         lblAvgTAT.setVisible(isVisible);
         lblAvgResponseTime.setVisible(isVisible);
+        lblGanttPID.setVisible(isVisible);
+        lblGanttPTime.setVisible(isVisible);
+        lblGantt.setVisible(isVisible);
+        topLine.setVisible(isVisible);
+        bottomLine.setVisible(isVisible);
+        leftLine.setVisible(isVisible);
+        rightLine.setVisible(isVisible);
     }
 
     private void setupDiskPane() {
@@ -377,6 +426,8 @@ public class SchedulingSimulatorConstruction extends Application {
                 lblAvgWaitingTime.setText("Average Waiting Time: " + String.format("%.2f", roundRobin.rrAWT));
                 lblAvgTAT.setText("Average TurnAround Time: " + String.format("%.2f", roundRobin.rrATAT));
                 lblAvgResponseTime.setText("Average Response Time: " + String.format("%.2f", roundRobin.rrART));
+                lblGanttPID.setText(roundRobin.getGanttPIDString());
+                lblGanttPTime.setText(roundRobin.getGanttTimeString());
                 setVisibilityOfAverageCPUResult(true);
                 roundRobin.printProcessInfo();
 
@@ -393,6 +444,8 @@ public class SchedulingSimulatorConstruction extends Application {
                 lblAvgWaitingTime.setText("Average Waiting Time: " + String.format("%.2f", fcfs.fcfsAWT));
                 lblAvgTAT.setText("Average TurnAround Time: " + String.format("%.2f", fcfs.fcfsATAT));
                 lblAvgResponseTime.setText("Average Response Time: " + String.format("%.2f", fcfs.fcfsART));
+                lblGanttPID.setText(fcfs.getGantString());
+                lblGanttPTime.setText(fcfs.getGantTimeString());
                 setVisibilityOfAverageCPUResult(true);
 
                 resultData.clear();

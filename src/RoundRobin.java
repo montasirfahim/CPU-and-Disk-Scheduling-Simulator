@@ -7,7 +7,8 @@ public class RoundRobin {
     private List<Processes> processes = new ArrayList<>();
     private int totalTime = 0;
     float rrAWT = 0, rrATAT = 0, rrART = 0;
-
+    private String ganttString = " ";
+    private String ganttTimeString = "0 ";
     public RoundRobin(List<Processes> processes, int timeQuantum){
         this.processes = processes;
         this.timeQuantum = timeQuantum;
@@ -38,6 +39,9 @@ public class RoundRobin {
                 currentProcess.setRemainingTime(currentProcess.getRemainingTime() - executionTime);
                 currentTime += executionTime;
 
+                ganttString += ("P" + currentProcess.getProcessId() + "   ");
+                if(currentTime < 10) ganttTimeString += (" " + currentTime + "    ");
+                else ganttTimeString += (currentTime + "   ");
                 //if current process is completed
                 if(currentProcess.getRemainingTime() == 0){
                     currentProcess.completionTime = currentTime;
@@ -92,6 +96,14 @@ public class RoundRobin {
         rrAWT = rrAWT / totalProcess;
         rrATAT = rrATAT / totalProcess;
         rrART = rrART / totalProcess;
+    }
+
+    public String getGanttPIDString(){
+        return ganttString;
+    }
+
+    public String getGanttTimeString(){
+        return ganttTimeString;
     }
 
     public void printProcessInfo(){//debugging purpose

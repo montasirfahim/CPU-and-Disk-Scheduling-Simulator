@@ -1,9 +1,12 @@
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
 public class FCFS {
     private final List<Processes> processes;
     float fcfsAWT = 0, fcfsATAT = 0, fcfsART = 0;
+    private String gantString = " ";
+    private String gantTimeString = "0 ";
     public FCFS(List<Processes> processes) {
         this.processes = processes;
     }
@@ -19,7 +22,14 @@ public class FCFS {
             process.turnaroundTime = process.completionTime - process.getProArrivalTime();
             process.waitingTime = process.turnaroundTime - process.getProBurstTime();
             process.responseTime = process.startTime - process.getProArrivalTime();
+
+            gantString += ("P" + process.getProcessId() + "   ");
+            if(currentTime < 10) gantTimeString += (" " + currentTime + "    ");
+            else gantTimeString += (currentTime + "    ");
         }
+
+        System.out.println(gantString);
+        System.out.println(gantTimeString);
     }
 
     public void getAverageFCFSResult(){
@@ -36,6 +46,13 @@ public class FCFS {
 
     public List<Processes> getProcesses(){
         return processes;
+    }
+
+    public String getGantString(){
+        return gantString;
+    }
+    public String getGantTimeString(){
+        return gantTimeString;
     }
 
 }
