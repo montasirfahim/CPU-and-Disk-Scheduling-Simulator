@@ -5,21 +5,35 @@ public class Processes {
     int completionTime = -1;
     int waitingTime;
     int turnaroundTime;
-    public  Processes(int id, int arrTime, int burTime){
+    int responseTime;
+    public Processes(int id, int arrTime, int burTime){
         this.processId = id;
         this.proArrivalTime = arrTime;
         this.proBurstTime = burTime;
+        this.remainingTime = burTime;
+    }
+
+    public Processes(Processes original){ //copy constructor
+        this.processId = original.processId;
+        this.proArrivalTime = original.proArrivalTime;
+        this.proBurstTime = original.proBurstTime;
+        this.remainingTime = original.remainingTime;
+        this.startTime = original.startTime;
+        this.completionTime = original.completionTime;
+        this.waitingTime = original.waitingTime;
+        this.turnaroundTime = original.turnaroundTime;
+        this.responseTime = original.responseTime;
     }
 
     public int getProcessId() {
         return processId;
     }
 
-    public int getArrivalTime() {
+    public int getProArrivalTime() {
         return proArrivalTime;
     }
 
-    public int getBurstTime() {
+    public int getProBurstTime() {
         return proBurstTime;
     }
 
@@ -29,6 +43,19 @@ public class Processes {
     public void setRemainingTime(int remainingTime) {
         this.remainingTime = remainingTime;
     }
+    public int getCompletionTime(){
+        return completionTime;
+    }
+    public int getTurnaroundTime(){
+        return turnaroundTime;
+    }
+    public int getWaitingTime(){
+        return waitingTime;
+    }
+    public int getResponseTime(){
+        return responseTime;
+    }
+
 
     public String toString(){
         return "Process ID: " + processId + ", Arrival Time: " + proArrivalTime + ", Burst Time: " + proBurstTime;

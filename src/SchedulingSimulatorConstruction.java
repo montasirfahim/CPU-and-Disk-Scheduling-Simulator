@@ -1,5 +1,6 @@
 import javafx.animation.FadeTransition;
 import javafx.application.Application;
+import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -11,7 +12,6 @@ import javafx.scene.layout.*;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.util.Duration;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.*;
@@ -23,21 +23,19 @@ public class SchedulingSimulatorConstruction extends Application {
     Button cpuButton, diskButton, btnHomeCPU, backButton, addProcessButton, resetButton;
     Button btnBankers, btnPageReplacement, btnMemoryAllocation, btnCalculateCPU;
     Label lblTimeQuantum, lblAddedProcess;
+    Label lblAvgWaitingTime, lblAvgTAT, lblAvgResponseTime;
     private TextField fieldTimeQuantum;
     ComboBox<String> comboBox;
     TextField processIdField, arrivalTimeField, burstTimeField;
     List<Processes> processDataList = new ArrayList<>();
-    // Declare the TableView
+
     private TableView<Processes> processTable;
-    TableView<Process> tableView;
-
-
+    private TableView<Processes> tableView;
     Set<Integer> setProcessID = new HashSet<>();
 
     @Override
     public void start(Stage primaryStage) {
         mainPane = new StackPane();
-
         setupHomePane();
         setupCPUPane();
         setupDiskPane();
@@ -103,7 +101,7 @@ public class SchedulingSimulatorConstruction extends Application {
         cpuPane = new AnchorPane();
         cpuPane.setPadding(new Insets(20));
         cpuPane.setStyle("-fx-background-color: lightblue;");
-        cpuPane.setPrefSize(1000, 1200);  // Set a larger preferred size to ensure scrolling
+        cpuPane.setPrefSize(1000, 1200);
 
         setupProcessTable();
         processTable.setVisible(false);
@@ -124,7 +122,6 @@ public class SchedulingSimulatorConstruction extends Application {
         btnCalculateCPU.setLayoutX(115);
         btnCalculateCPU.setLayoutY(550);
         styleCalculateButton(btnCalculateCPU);
-        //btnCalculateCPU.setStyle("-fx-background-color: #04AA6D; -fx-pref-width: 100; -fx-text-fill: white; -fx-font-weight:bold; -fx-font-size: 14px; -fx-padding: 10px;");
         btnCalculateCPU.setOnAction(this::handleAction);
 
         comboBox = new ComboBox<>();
@@ -149,7 +146,19 @@ public class SchedulingSimulatorConstruction extends Application {
         lblTimeQuantum.setVisible(false);
         fieldTimeQuantum.setVisible(false);
 
-        //Initial Process Fields
+        //average result printing
+        lblAvgWaitingTime = new Label("Average Waiting Time: ");
+        lblAvgWaitingTime.setLayoutX(880); lblAvgWaitingTime.setLayoutY(195);
+        lblAvgWaitingTime.setStyle("-fx-font-weight: bold; -fx-font-size: 12px;");
+        lblAvgTAT = new Label("Average TurnAround Time: ");
+        lblAvgTAT.setLayoutX(880); lblAvgTAT.setLayoutY(220);
+        lblAvgTAT.setStyle("-fx-font-weight: bold; -fx-font-size: 12px");
+        lblAvgResponseTime = new Label("Average Response Time: ");
+        lblAvgResponseTime.setLayoutX(880); lblAvgResponseTime.setLayoutY(245);
+        lblAvgResponseTime.setStyle("-fx-font-weight: bold; -fx-font-size: 12px");
+        setVisibilityOfAverageCPUResult(false);
+
+        //initial Process Fields
         processIdField = new TextField();
         processIdField.setPromptText("Process ID");
         arrivalTimeField = new TextField();
@@ -157,7 +166,7 @@ public class SchedulingSimulatorConstruction extends Application {
         burstTimeField = new TextField();
         burstTimeField.setPromptText("Burst Time");
 
-        //Set Layout for Initial Fields
+        //set Layout for Initial Fields
         processIdField.setLayoutX(50);
         processIdField.setLayoutY(80);
         arrivalTimeField.setLayoutX(200);
@@ -165,12 +174,13 @@ public class SchedulingSimulatorConstruction extends Application {
         burstTimeField.setLayoutX(350);
         burstTimeField.setLayoutY(80);
 
-        //Add Process Button
+        //add Process Button
         addProcessButton = new Button("Add Process");
         addProcessButton.setLayoutX(510);
         addProcessButton.setLayoutY(80);
         addProcessButton.setStyle("-fx-text-fill: white; -fx-font-weight: bold; -fx-background-color: green;");
         addProcessButton.setOnAction(this::handleAction);
+
         //reset button
         resetButton = new Button("Reset All");
         resetButton.setOnAction(this::handleAction);
@@ -184,14 +194,22 @@ public class SchedulingSimulatorConstruction extends Application {
         lblAddedProcess.setLayoutY(50);
         lblAddedProcess.setVisible(false);
 
-        //Add initial components to the pane
+        //add initial components to the pane
         cpuPane.getChildren().addAll(cpuLabel, btnHomeCPU, comboBox, lblTimeQuantum, fieldTimeQuantum,
                 processIdField, arrivalTimeField, burstTimeField, addProcessButton,resetButton, lblAddedProcess);
         cpuPane.getChildren().addAll(btnCalculateCPU);
+        cpuPane.getChildren().addAll(lblAvgWaitingTime, lblAvgTAT, lblAvgResponseTime);
         ScrollPane scrollPane = new ScrollPane(cpuPane);
-        scrollPane.setFitToWidth(true);  // This makes the ScrollPane fit the width of the content
+        scrollPane.setFitToWidth(true);  //this makes the ScrollPane fit the width of the content
         scrollPane.setPrefHeight(600);
         mainPane.getChildren().addAll(scrollPane);
+    }
+
+    private void setVisibilityOfAverageCPUResult(boolean isVisible){
+        //cpuResultPane.setVisible(true);
+        lblAvgWaitingTime.setVisible(isVisible);
+        lblAvgTAT.setVisible(isVisible);
+        lblAvgResponseTime.setVisible(isVisible);
     }
 
     private void setupDiskPane() {
@@ -240,15 +258,24 @@ public class SchedulingSimulatorConstruction extends Application {
             mainPane.getChildren().setAll(homePane);
             processDataList.clear();
             setProcessID.clear();
+            comboBox.getSelectionModel().select("Select any Algorithm");
             lblTimeQuantum.setVisible(false);
             fieldTimeQuantum.setVisible(false);
             fieldTimeQuantum.clear();
+            processTable.getItems().clear();
+            processTable.setVisible(false);
+            tableView.getItems().clear();
+            tableView.setVisible(false);
+            setVisibilityOfAverageCPUResult(false);
+            cpuPane.layout();
+            homePane.layout(); //force UI refresh
         }
         else if(event.getSource() == backButton){
             mainPane.getChildren().setAll(homePane);
             processDataList.clear();
             setProcessID.clear();
         }
+
         else if(event.getSource() == addProcessButton){
             String processIdText = processIdField.getText();
             String arrivalTimeText = arrivalTimeField.getText();
@@ -259,7 +286,6 @@ public class SchedulingSimulatorConstruction extends Application {
                 return;
             }
 
-            // Check if the inputs are valid integers
             if(!isValidInteger(processIdText) || !isValidInteger(arrivalTimeText) || !isValidInteger(burstTimeText)){
                 showErrorDialog("Please Enter Valid Data");
                 return;
@@ -291,10 +317,10 @@ public class SchedulingSimulatorConstruction extends Application {
             processTable.setVisible(true);
         }
         else if(event.getSource() == resetButton){
+            System.out.println("Reset Pressed!");
             processDataList.clear();
             setProcessID.clear();
             lblAddedProcess.setVisible(false);
-
             comboBox.getSelectionModel().select("Select any Algorithm");
             lblTimeQuantum.setVisible(false);
             fieldTimeQuantum.setVisible(false);
@@ -304,12 +330,21 @@ public class SchedulingSimulatorConstruction extends Application {
             burstTimeField.clear();
             processTable.getItems().clear();
             processTable.setVisible(false);
-            tableView.getItems().clear();
-            tableView.setVisible(false);
+            if(tableView != null){
+                tableView.getItems().clear();
+                tableView.setVisible(false);
+                tableView.setManaged(false);
+            }
+            setVisibilityOfAverageCPUResult(false);
             cpuPane.layout();
 
         }
         else if(event.getSource() == btnCalculateCPU){
+            if(tableView != null){
+                tableView.getItems().clear();
+                tableView.getColumns().clear();
+                tableView.setVisible(false);
+            }
             if(setProcessID.isEmpty()){
                 showErrorDialog("Please Enter Some Processes!");
                 return;
@@ -319,38 +354,41 @@ public class SchedulingSimulatorConstruction extends Application {
                 return;
             }
 
-            int timeQuantumt = Integer.parseInt(fieldTimeQuantum.getText());
-            if(timeQuantumt <= 0){
+            int timeQuantum = Integer.parseInt(fieldTimeQuantum.getText());
+            if(timeQuantum <= 0){
                 showErrorDialog("Enter Valid Time-Quantum");
                 return;
             }
 
-            ObservableList<Process> resultData = FXCollections.observableArrayList();
-            //Run the Round Robin scheduling algorithm
 
-            RoundRobin roundRobin = new RoundRobin(processDataList, timeQuantumt);
+            List<Processes> copiedList = deepCopyProcesses(processDataList);
+            copiedList.sort(Comparator.comparingInt(process -> process.proArrivalTime));
+            ObservableList<Processes> resultData = FXCollections.observableArrayList();
+
+            RoundRobin roundRobin = new RoundRobin(copiedList, timeQuantum);
             roundRobin.runRoundRobin();
+            roundRobin.getAverageResult();
+            lblAvgWaitingTime.setText("Average Waiting Time: " + String.format("%.2f", roundRobin.rrAWT));
+            lblAvgTAT.setText("Average TurnAround Time: " + String.format("%.2f", roundRobin.rrATAT));
+            lblAvgResponseTime.setText("Average Response Time: " + String.format("%.2f", roundRobin.rrART));
+            setVisibilityOfAverageCPUResult(true);
+            roundRobin.printProcessInfo();
 
-            //Get the processes and add them to the resultData list
-            //resultData.addAll(roundRobin.getProcesses());
-
-            // Now call the method to generate and display the result table in cpuPane
-            generateResultTable(cpuPane, resultData);
+            resultData.clear();
+            resultData.addAll(roundRobin.getProcesses());  //get the processes and add them to the resultData list
+            generateResultTable(cpuPane, resultData); //to generate and display the result table in cpuPane
             tableView.setVisible(true);
 
         }
-        else if(event.getSource() instanceof ComboBox) {
+
+        else if(event.getSource() instanceof ComboBox){
             handleComboBoxSelection((ComboBox<?>) event.getSource());
         }
     }
 
     private void handleComboBoxSelection(ComboBox<?> comboBox){
         String selectedOption = (String) comboBox.getValue();
-//        if(!selectedOption.isEmpty()){
-//            lblAddedProcess.setVisible(false);
-//        }
-//        tableView.getItems().clear(); //clear before pressing calculate button
-//        tableView.setVisible(false);
+
         if(selectedOption.contentEquals("First Come First Served")){
             lblTimeQuantum.setVisible(false);
             fieldTimeQuantum.setVisible(false);
@@ -415,79 +453,80 @@ public class SchedulingSimulatorConstruction extends Application {
     private void setupProcessTable() {
         processTable = new TableView<>();
 
-        // Create Table Columns
+        //Create Table Columns
         TableColumn<Processes, Integer> idColumn = new TableColumn<>("Process ID");
         idColumn.setCellValueFactory(new PropertyValueFactory<>("processId"));
 
         TableColumn<Processes, Integer> arrivalColumn = new TableColumn<>("Arrival Time");
-        arrivalColumn.setCellValueFactory(new PropertyValueFactory<>("arrivalTime"));
+        arrivalColumn.setCellValueFactory(new PropertyValueFactory<>("proArrivalTime"));
 
         TableColumn<Processes, Integer> burstColumn = new TableColumn<>("Burst Time");
-        burstColumn.setCellValueFactory(new PropertyValueFactory<>("burstTime"));
+        burstColumn.setCellValueFactory(new PropertyValueFactory<>("proBurstTime"));
 
-        // Add Columns to Table
+        //Add Columns to Table
         processTable.getColumns().addAll(idColumn, arrivalColumn, burstColumn);
 
-        // Set Table Size
+        //Set Table Size
         processTable.setPrefWidth(240);
-        processTable.setMinHeight(30);  // Minimum height for the header
-        processTable.setMaxHeight(Region.USE_COMPUTED_SIZE);  // Let the height adjust dynamically as rows are added
+        processTable.setMinHeight(30);  //Minimum height for the header
+        processTable.setMaxHeight(Region.USE_COMPUTED_SIZE);  //Let the height adjust dynamically as rows are added
 
         processTable.setLayoutX(50);
         processTable.setLayoutY(120);
-        // Start with no rows (empty table)
         processTable.getItems().clear();  //Clear any existing rows
-
-        // Add TableView to the pane
-        cpuPane.getChildren().add(processTable);
+        cpuPane.getChildren().add(processTable);  //Add TableView to the pane
     }
 
-    public void generateResultTable(AnchorPane cpuPane, ObservableList<Process> resultData) {
-        // Create a new TableView instance
+    public void generateResultTable(AnchorPane cpuPane, ObservableList<Processes> resultData) {
         tableView = new TableView<>();
-        // Create columns for the table
-        TableColumn<Process, Integer> idColumn = new TableColumn<>("Process ID");
-        TableColumn<Process, Integer> arrivalColumn = new TableColumn<>("Arrival Time");
-        TableColumn<Process, Integer> burstColumn = new TableColumn<>("Burst Time");
-        TableColumn<Process, Integer> completionColumn = new TableColumn<>("Completion Time");
-        TableColumn<Process, Integer> waitingColumn = new TableColumn<>("Waiting Time");
-        TableColumn<Process, Integer> turnaroundColumn = new TableColumn<>("Turnaround Time");
+        tableView.getItems().clear();
 
-        // Set up the cell value factories (map each column to the appropriate property in Process)
-//        idColumn.setCellValueFactory(cellData -> cellData.getValue().processIdProperty().asObject());
-//        arrivalColumn.setCellValueFactory(cellData -> cellData.getValue().arrivalTimeProperty().asObject());
-//        burstColumn.setCellValueFactory(cellData -> cellData.getValue().burstTimeProperty().asObject());
-//        completionColumn.setCellValueFactory(cellData -> cellData.getValue().completionTimeProperty().asObject());
-//        waitingColumn.setCellValueFactory(cellData -> cellData.getValue().waitingTimeProperty().asObject());
-//        turnaroundColumn.setCellValueFactory(cellData -> cellData.getValue().turnaroundTimeProperty().asObject());
+        //create columns for the table
+        TableColumn<Processes, Integer> idColumn = new TableColumn<>("Process ID");
+        TableColumn<Processes, Integer> arrivalColumn = new TableColumn<>("Arrival Time");
+        TableColumn<Processes, Integer> burstColumn = new TableColumn<>("Burst Time");
+        TableColumn<Processes, Integer> completionColumn = new TableColumn<>("Completion Time");
+        TableColumn<Processes, Integer> waitingColumn = new TableColumn<>("Waiting Time");
+        TableColumn<Processes, Integer> turnaroundColumn = new TableColumn<>("Turnaround Time");
 
-        // Add columns to the TableView
+        //set up the cell value
+        idColumn.setCellValueFactory(cellData -> new ReadOnlyObjectWrapper<>(cellData.getValue().getProcessId()));
+        arrivalColumn.setCellValueFactory(cellData -> new ReadOnlyObjectWrapper<>(cellData.getValue().getProArrivalTime()));
+        burstColumn.setCellValueFactory(cellData -> new ReadOnlyObjectWrapper<>(cellData.getValue().getProBurstTime()));
+        completionColumn.setCellValueFactory(cellData -> new ReadOnlyObjectWrapper<>(cellData.getValue().getCompletionTime()));
+        waitingColumn.setCellValueFactory(cellData -> new ReadOnlyObjectWrapper<>(cellData.getValue().getWaitingTime()));
+        turnaroundColumn.setCellValueFactory(cellData -> new ReadOnlyObjectWrapper<>(cellData.getValue().getTurnaroundTime()));
+
+        //add columns to the table
         tableView.getColumns().addAll(idColumn, arrivalColumn, burstColumn, completionColumn, waitingColumn, turnaroundColumn);
 
-        // Populate the table with data (the ObservableList resultData)
-        tableView.setItems(resultData);
+        tableView.setItems(resultData); //provide table data
 
-        // Adjust table layout (you can customize these values based on your layout)
-        tableView.setPrefSize(550, 300);  // Width: 700, Height: 300
-        tableView.setLayoutX(300);         // Adjust X position
-        tableView.setLayoutY(150);        // Adjust Y position
+        //adjust table layout (you can customize these values based on your layout)
+        tableView.setPrefSize(573, 300);
+        tableView.setLayoutX(300);
+        tableView.setLayoutY(150);
 
-        // Clear any previous content and add the TableView to cpuPane
-        //cpuPane.getChildren().clear();
+        //clear any previous content and add the TableView to cpuPane
         cpuPane.getChildren().add(tableView);
-        tableView.setVisible(false);
+        tableView.setVisible(true);
     }
 
-
-    private static boolean isValidInteger(String str) {
-        try {
+    private static boolean isValidInteger(String str){
+        try{
             Integer.parseInt(str);
             return true;
-        } catch (NumberFormatException e) {
-            return false;  // If an exception occurs, it's not a valid integer
+        }catch(NumberFormatException e){
+            return false;
         }
     }
 
-
+    private List<Processes> deepCopyProcesses(List<Processes> original){
+        List<Processes> copy = new ArrayList<>();
+        for(Processes process : original){
+            copy.add(new Processes(process)); //use the copy constructor to create a new object
+        }
+        return copy;
+    }
 
 }
