@@ -5,8 +5,8 @@ import java.util.List;
 public class FCFS {
     private final List<Processes> processes;
     float fcfsAWT = 0, fcfsATAT = 0, fcfsART = 0;
-    private String gantString = " ";
-    private String gantTimeString = "0 ";
+    private String gantString = "";
+    private String gantTimeString = "";
     public FCFS(List<Processes> processes) {
         this.processes = processes;
     }
@@ -23,9 +23,9 @@ public class FCFS {
             process.waitingTime = process.turnaroundTime - process.getProBurstTime();
             process.responseTime = process.startTime - process.getProArrivalTime();
 
-            gantString += ("P" + process.getProcessId() + "   ");
-            if(currentTime < 10) gantTimeString += (" " + currentTime + "    ");
-            else gantTimeString += (currentTime + "    ");
+
+            gantString += String.format("%-5s", "P" + process.getProcessId());
+            gantTimeString += String.format("%-5s", currentTime);
         }
 
         System.out.println(gantString);

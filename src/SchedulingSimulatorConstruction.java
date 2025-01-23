@@ -16,10 +16,8 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.*;
 import javafx.scene.shape.Line;
 import javafx.stage.Stage;
-import javafx.stage.StageStyle;
 import javafx.util.Duration;
 
-import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.*;
@@ -27,9 +25,12 @@ import java.util.HashSet;
 public class SchedulingSimulatorConstruction extends Application {
 
     private StackPane mainPane;
-    private AnchorPane homePane, cpuPane, diskPane;
+    private AnchorPane homePane, cpuPane, diskPane, pagingPane;
     Button cpuButton, diskButton, btnHomeCPU, backButton, addProcessButton, resetButton;
     Button btnBankers, btnPageReplacement, btnMemoryAllocation, btnCalculateCPU;
+    Button btnPagingHome, btnPagingAddString, btnPagingFrameSize, btnPageReset, btnPagingCalculate;
+    Label lblPagingHeader, lblPagingString;
+    ComboBox<String> pageComboBox;
     Label lblTimeQuantum, lblAddedProcess;
     Label lblAvgWaitingTime, lblAvgTAT, lblAvgResponseTime, lblGanttPID, lblGanttPTime, lblGantt;
     Line topLine, bottomLine, rightLine, leftLine;
@@ -48,6 +49,7 @@ public class SchedulingSimulatorConstruction extends Application {
         setupHomePane();
         setupCPUPane();
         setupDiskPane();
+        setUpPagingPane();
 
         mainPane.getChildren().add(homePane);
 
@@ -135,7 +137,7 @@ public class SchedulingSimulatorConstruction extends Application {
 
         comboBox = new ComboBox<>();
         comboBox.getItems().addAll("Select any Algorithm",
-                "First Come First Served", "Shortest Job Next",
+                "First Come First Served", "Shortest Job First",
                 "Shortest Remaining Time First", "Priority Scheduling", "Round Robin");
         comboBox.getSelectionModel().select("Select any Algorithm");
         comboBox.setStyle("-fx-font-size: 14px;");
@@ -170,11 +172,13 @@ public class SchedulingSimulatorConstruction extends Application {
         lblGantt.setLayoutX(300); lblGantt.setLayoutY(470);
         lblGantt.setStyle("-fx-font-weight: bold; -fx-font-size: 13px");
 
+
         lblGanttPID = new Label();
         lblGanttPID.setLayoutX(310); lblGanttPID.setLayoutY(500);
-        lblGanttPID.setStyle("-fx-font-weight: bold; -fx-font-size: 12px");
+        lblGanttPID.setStyle("-fx-font-family: 'Courier New'; -fx-font-weight: bold; -fx-font-size: 13px;");
         lblGanttPTime = new Label();
         lblGanttPTime.setLayoutX(310); lblGanttPTime.setLayoutY(515);
+        lblGanttPTime.setStyle("-fx-font-family: 'Courier New'; -fx-font-size: 13px;");
 
         double boxX = 300; //Starting X position
         double boxY = 490; //Starting Y position
@@ -203,7 +207,7 @@ public class SchedulingSimulatorConstruction extends Application {
         processIdField = new TextField();
         processIdField.setPromptText("Process ID");
         arrivalTimeField = new TextField();
-        arrivalTimeField.setPromptText("Arrival Time");
+        arrivalTimeField.setPromptText("Arrival Time / Priority");
         burstTimeField = new TextField();
         burstTimeField.setPromptText("Burst Time");
 
@@ -275,10 +279,35 @@ public class SchedulingSimulatorConstruction extends Application {
         styleHomeButton(backButton);
         backButton.setLayoutX(540);
         backButton.setLayoutY(550);
-
         backButton.setOnAction(this::handleAction);
 
         diskPane.getChildren().addAll(diskLabel, backButton);
+    }
+
+    private void setUpPagingPane() {
+        pagingPane = new AnchorPane();
+        pagingPane.setPadding(new Insets(20));
+        pagingPane.setStyle("-fx-background-color: lightblue;");
+
+        Label lblHeader = new Label("Page Replacement Algorithms");
+        lblHeader.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-font-family: Arial;");
+        lblHeader.setLayoutX(480); lblHeader.setLayoutY(30);
+
+        btnPagingHome = new Button("Back to Home");
+        styleHomeButton(btnPagingHome);
+        btnPagingHome.setLayoutX(540); btnPagingHome.setLayoutY(550);
+        btnPagingHome.setOnAction(this::handleAction);
+
+        pageComboBox = new ComboBox<>();
+        pageComboBox.getItems().addAll("Select any Algorithm",
+                "First In First Out", "Least Recently Used", "Optimal");
+        pageComboBox.getSelectionModel().select("Select any Algorithm");
+        pageComboBox.setStyle("-fx-font-size: 14px;");
+        pageComboBox.setLayoutX(850);
+        pageComboBox.setLayoutY(80);
+        pageComboBox.setOnAction(this::handleAction);
+
+        pagingPane.getChildren().addAll(lblHeader, btnPagingHome, pageComboBox);
     }
 
     private void styleButton(Button button){
@@ -303,6 +332,9 @@ public class SchedulingSimulatorConstruction extends Application {
         else if (event.getSource() == diskButton){
             mainPane.getChildren().setAll(diskPane);
         }
+        else if(event.getSource() == btnPageReplacement){
+            mainPane.getChildren().setAll(pagingPane);
+        }
         else if(event.getSource() == btnHomeCPU){
             mainPane.getChildren().setAll(homePane);
             processDataList.clear();
@@ -313,8 +345,11 @@ public class SchedulingSimulatorConstruction extends Application {
             fieldTimeQuantum.clear();
             processTable.getItems().clear();
             processTable.setVisible(false);
-            tableView.getItems().clear();
-            tableView.setVisible(false);
+            if(tableView != null){
+                tableView.getItems().clear();
+                tableView.setVisible(false);
+                tableView.setManaged(false);
+            }
             setVisibilityOfAverageCPUResult(false);
             cpuPane.layout();
             homePane.layout(); //force UI refresh
@@ -323,6 +358,9 @@ public class SchedulingSimulatorConstruction extends Application {
             mainPane.getChildren().setAll(homePane);
             processDataList.clear();
             setProcessID.clear();
+        }
+        else if(event.getSource() == btnPagingHome){
+            mainPane.getChildren().setAll(homePane);
         }
 
         else if(event.getSource() == addProcessButton){
@@ -437,10 +475,10 @@ public class SchedulingSimulatorConstruction extends Application {
                 tableView.setVisible(true);
             }
             else if(selectedAlgo.contentEquals("First Come First Served")){
-                setVisibilityOfAverageCPUResult(false);
                 FCFS fcfs = new FCFS(copiedList);
                 fcfs.runFCFS();
                 fcfs.getAverageFCFSResult();
+
                 lblAvgWaitingTime.setText("Average Waiting Time: " + String.format("%.2f", fcfs.fcfsAWT));
                 lblAvgTAT.setText("Average TurnAround Time: " + String.format("%.2f", fcfs.fcfsATAT));
                 lblAvgResponseTime.setText("Average Response Time: " + String.format("%.2f", fcfs.fcfsART));
@@ -452,6 +490,38 @@ public class SchedulingSimulatorConstruction extends Application {
                 resultData.addAll(fcfs.getProcesses());
                 generateResultTable(cpuPane, resultData);
                 tableView.setVisible(true);
+            }
+
+            else if(selectedAlgo.contentEquals("Priority Scheduling")){
+                PriorityScheduling priorityScheduling = new PriorityScheduling(copiedList);
+                priorityScheduling.runPriorityScheduling();
+
+                lblAvgWaitingTime.setText("Average Waiting Time: " + String.format("%.2f", priorityScheduling.priorityAWT));
+                lblAvgTAT.setText("Average TurnAround Time: " + String.format("%.2f", priorityScheduling.priorityATAT));
+                lblAvgResponseTime.setText("Average Response Time: " + String.format("%.2f", priorityScheduling.priorityART));
+                lblGanttPID.setText(priorityScheduling.getGanttPID());
+                lblGanttPTime.setText(priorityScheduling.getGanttPTime());
+                setVisibilityOfAverageCPUResult(true);
+
+                resultData.clear();
+                resultData.addAll(priorityScheduling.getProcesses());
+                generateResultTable(cpuPane, resultData);
+            }
+
+            else if(selectedAlgo.contentEquals("Shortest Job First")){
+                ShortestJobFirst shortestJobFirst = new ShortestJobFirst(copiedList);
+                shortestJobFirst.runShortestJobFirst();
+
+                lblAvgWaitingTime.setText("Average Waiting Time: " + String.format("%.2f", shortestJobFirst.sjfAWT));
+                lblAvgTAT.setText("Average TurnAround Time: " + String.format("%.2f", shortestJobFirst.sjfATAT));
+                lblAvgResponseTime.setText("Average Response Time: " + String.format("%.2f", shortestJobFirst.sjfART));
+                lblGanttPID.setText(shortestJobFirst.getGanttPID());
+                lblGanttPTime.setText(shortestJobFirst.getGanttPTime());
+                setVisibilityOfAverageCPUResult(true);
+
+                resultData.clear();
+                resultData.addAll(shortestJobFirst.getProcesses());
+                generateResultTable(cpuPane, resultData);
             }
 
 
@@ -470,7 +540,7 @@ public class SchedulingSimulatorConstruction extends Application {
             fieldTimeQuantum.setVisible(false);
             System.out.println("Selected: " + selectedOption);
         }
-        else if(selectedOption.contentEquals("Shortest Job Next")){
+        else if(selectedOption.contentEquals("Shortest Job First")){
             lblTimeQuantum.setVisible(false);
             fieldTimeQuantum.setVisible(false);
             System.out.println("Selected: " + selectedOption);
