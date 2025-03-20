@@ -25,18 +25,22 @@ import java.util.HashSet;
 public class SchedulingSimulatorConstruction extends Application {
 
     private StackPane mainPane;
-    private AnchorPane homePane, cpuPane, diskPane, pagingPane;
+    private AnchorPane homePane, cpuPane, diskPane, pagingPane, memoryAllocPane;
     Button cpuButton, diskButton, btnHomeCPU, backButton, addProcessButton, resetButton;
-    Button btnBankers, btnPageReplacement, btnMemoryAllocation, btnCalculateCPU;
+    Button btnBankers, btnPageReplacement, btnMemoryAllocation, btnCalculateCPU, btnCalculatePage, btnResetPage;
     Button btnPagingHome, btnPagingAddString, btnPagingFrameSize, btnPageReset, btnPagingCalculate;
-    Label lblPagingHeader, lblPagingString;
-    ComboBox<String> pageComboBox;
+    Button btnDiskCalculate, btnDiskReset, btnMemoryBack, btnMemoryCalculate, btnMemoryReset;
+    Label lblPartitionsSize, lblProcessesSize, lblFragmentation, lblAllocation, lblRefString, lblFrameSize, lblPageHit, lblPageMiss, lblHitMissRatio;
+    TextField fieldPartitionsSize, filedProcessSize, fieldRefString, fieldFrameSize;
+
+    ComboBox<String> pageComboBox, diskComboBox, memoryComboBox;
     Label lblTimeQuantum, lblAddedProcess;
     Label lblAvgWaitingTime, lblAvgTAT, lblAvgResponseTime, lblGanttPID, lblGanttPTime, lblGantt;
     Line topLine, bottomLine, rightLine, leftLine;
     private TextField fieldTimeQuantum;
     ComboBox<String> comboBox;
-    TextField processIdField, arrivalTimeField, burstTimeField;
+    Label lblPagingHeader, lblPagingString, lblTrackSequence, lblHeadPointer, lblTrackRange, lblDiskResult, lblDirections;
+    TextField processIdField, arrivalTimeField, burstTimeField, fieldTrackSequence, fieldHeadPointer, fieldTrackRange;;
     List<Processes> processDataList = new ArrayList<>();
 
     private TableView<Processes> processTable;
@@ -50,6 +54,7 @@ public class SchedulingSimulatorConstruction extends Application {
         setupCPUPane();
         setupDiskPane();
         setUpPagingPane();
+        setUpMemoryAllocPane();
 
         mainPane.getChildren().add(homePane);
 
@@ -281,7 +286,146 @@ public class SchedulingSimulatorConstruction extends Application {
         backButton.setLayoutY(550);
         backButton.setOnAction(this::handleAction);
 
-        diskPane.getChildren().addAll(diskLabel, backButton);
+        lblTrackSequence = new Label("Track Sequence: ");
+        lblTrackSequence.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-font-family: Arial;");
+        lblTrackSequence.setLayoutX(300);
+        lblTrackSequence.setLayoutY(140);
+
+        fieldTrackSequence = new TextField();
+        fieldTrackSequence.setPrefWidth(350); // Set fixed width
+        fieldTrackSequence.setLayoutX(420);
+        fieldTrackSequence.setLayoutY(137);
+        fieldTrackSequence.setPromptText("Enter sequence separated by comma");
+
+        lblHeadPointer = new Label("Head Pointer:");
+        lblHeadPointer.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-font-family: Arial;");
+        lblHeadPointer.setLayoutX(300);
+        lblHeadPointer.setLayoutY(180);
+
+        fieldHeadPointer = new TextField();
+        fieldHeadPointer.setPrefWidth(350);
+        fieldHeadPointer.setLayoutX(420);
+        fieldHeadPointer.setLayoutY(177);
+        fieldHeadPointer.setPromptText("Enter head pointer value");
+
+        lblTrackRange = new Label("Track Range:");
+        lblTrackRange.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-font-family: Arial;");
+        lblTrackRange.setLayoutX(300);
+        lblTrackRange.setLayoutY(220);
+
+        fieldTrackRange = new TextField();
+        fieldTrackRange.setPrefWidth(350);
+        fieldTrackRange.setLayoutX(420);
+        fieldTrackRange.setLayoutY(217);
+        fieldTrackRange.setPromptText("Enter track range (e.g., 0-255)");
+
+        btnDiskCalculate = new Button("Calculate Seek Distance");
+        btnDiskCalculate.setLayoutX(470);
+        btnDiskCalculate.setLayoutY(260);
+        btnDiskCalculate.setOnAction(this::handleAction);
+        btnDiskCalculate.setStyle("-fx-text-fill: white; -fx-font-weight: bold; -fx-background-color: green;");
+
+        btnDiskReset = new Button("Reset All");
+        btnDiskReset.setOnAction(this::handleAction);
+        btnDiskReset.setLayoutX(640);
+        btnDiskReset.setLayoutY(260);
+        btnDiskReset.setStyle("-fx-text-fill: white; -fx-font-weight: bold; -fx-background-color: red;");
+
+        lblDiskResult = new Label();
+        lblDiskResult.setLayoutX(490);
+        lblDiskResult.setLayoutY(360);
+        lblDiskResult.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-font-family: Arial;");
+
+        lblDirections = new Label("");
+        lblDirections.setLayoutX(400);
+        lblDirections.setLayoutY(400);
+        lblDirections.setStyle("-fx-font-size: 12px; -fx-font-weight: bold; -fx-font-family: Arial;");
+
+        diskComboBox = new ComboBox<>();
+        diskComboBox.getItems().addAll("Select Any Algorithm",
+                "FCFS", "SSTF", "SCAN", "C-SCAN", "LOOK", "C-LOOK");
+        diskComboBox.getSelectionModel().select("Select Any Algorithm");
+        diskComboBox.setStyle("-fx-font-size: 14px;");
+        diskComboBox.setLayoutX(850);
+        diskComboBox.setLayoutY(80);
+        diskComboBox.setOnAction(this::handleAction);
+
+        diskPane.getChildren().addAll(lblTrackRange, fieldTrackRange, lblHeadPointer, fieldHeadPointer,btnDiskCalculate, btnDiskReset, lblDiskResult, lblDirections);
+        diskPane.getChildren().addAll(diskLabel, backButton, diskComboBox, lblTrackSequence, fieldTrackSequence);
+    }
+
+    private void setUpMemoryAllocPane() {
+        memoryAllocPane = new AnchorPane();
+        memoryAllocPane.setPadding(new Insets(20));
+        memoryAllocPane.setStyle("-fx-background-color: lightblue;");
+
+        Label memoryLabel = new Label("Memory Allocation Algorithms");
+        memoryLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-font-family: Arial;");
+        memoryLabel.setLayoutX(480);
+        memoryLabel.setLayoutY(40);
+
+        btnMemoryBack  = new Button("Back to Home");
+        styleHomeButton(btnMemoryBack);
+        btnMemoryBack.setLayoutX(540);
+        btnMemoryBack.setLayoutY(550);
+        btnMemoryBack.setOnAction(this::handleAction);
+
+        lblPartitionsSize = new Label("Partitions Size: ");
+        lblPartitionsSize.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-font-family: Arial;");
+        lblPartitionsSize.setLayoutX(300);
+        lblPartitionsSize.setLayoutY(140);
+
+        fieldPartitionsSize = new TextField();
+        fieldPartitionsSize.setPrefWidth(350); // Set fixed width
+        fieldPartitionsSize.setLayoutX(420);
+        fieldPartitionsSize.setLayoutY(137);
+        fieldPartitionsSize.setPromptText("Enter partitions size separated by comma");
+
+        lblProcessesSize = new Label("Process Size:");
+        lblProcessesSize.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-font-family: Arial;");
+        lblProcessesSize.setLayoutX(300);
+        lblProcessesSize.setLayoutY(180);
+
+        filedProcessSize = new TextField();
+        filedProcessSize.setPrefWidth(350);
+        filedProcessSize.setLayoutX(420);
+        filedProcessSize.setLayoutY(177);
+        filedProcessSize.setPromptText("Enter process size separated by comma");
+
+
+        btnMemoryCalculate = new Button("Calculate Internal Fragmentation");
+        btnMemoryCalculate.setLayoutX(460);
+        btnMemoryCalculate.setLayoutY(260);
+        btnMemoryCalculate.setOnAction(this::handleAction);
+        btnMemoryCalculate.setStyle("-fx-text-fill: white; -fx-font-weight: bold; -fx-background-color: green;");
+
+        btnMemoryReset = new Button("Reset All");
+        btnMemoryReset.setOnAction(this::handleAction);
+        btnMemoryReset.setLayoutX(670);
+        btnMemoryReset.setLayoutY(260);
+        btnMemoryReset.setStyle("-fx-text-fill: white; -fx-font-weight: bold; -fx-background-color: red;");
+
+        lblFragmentation = new Label();
+        lblFragmentation.setLayoutX(470);
+        lblFragmentation.setLayoutY(360);
+        lblFragmentation.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-font-family: Arial;");
+
+        lblAllocation = new Label("");
+        lblAllocation.setLayoutX(470);
+        lblAllocation.setLayoutY(400);
+        lblAllocation.setStyle("-fx-font-size: 12px; -fx-font-weight: bold; -fx-font-family: Arial;");
+
+        memoryComboBox = new ComboBox<>();
+        memoryComboBox.getItems().addAll("Select Any Algorithm",
+                "First Fit", "Best Fit", "Worst Fit");
+        memoryComboBox.getSelectionModel().select("Select Any Algorithm");
+        memoryComboBox.setStyle("-fx-font-size: 14px;");
+        memoryComboBox.setLayoutX(850);
+        memoryComboBox.setLayoutY(80);
+        memoryComboBox.setOnAction(this::handleAction);
+
+        memoryAllocPane.getChildren().addAll(lblPartitionsSize, fieldPartitionsSize, lblProcessesSize, filedProcessSize, memoryLabel);
+        memoryAllocPane.getChildren().addAll(btnMemoryBack, btnMemoryCalculate, btnMemoryReset, memoryComboBox, lblFragmentation, lblAllocation);
     }
 
     private void setUpPagingPane() {
@@ -298,6 +442,52 @@ public class SchedulingSimulatorConstruction extends Application {
         btnPagingHome.setLayoutX(540); btnPagingHome.setLayoutY(550);
         btnPagingHome.setOnAction(this::handleAction);
 
+        lblRefString = new Label("Reference String: ");
+        lblRefString.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-font-family: Arial;");
+        lblRefString.setLayoutX(300);
+        lblRefString.setLayoutY(140);
+
+        fieldRefString = new TextField();
+        fieldRefString.setPrefWidth(350); // Set fixed width
+        fieldRefString.setLayoutX(420);
+        fieldRefString.setLayoutY(137);
+        fieldRefString.setPromptText("Enter page ref. string separated by comma");
+
+        lblFrameSize = new Label("Frame Size:");
+        lblFrameSize.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-font-family: Arial;");
+        lblFrameSize.setLayoutX(300);
+        lblFrameSize.setLayoutY(180);
+
+        fieldFrameSize = new TextField();
+        fieldFrameSize.setPrefWidth(350);
+        fieldFrameSize.setLayoutX(420);
+        fieldFrameSize.setLayoutY(177);
+        fieldFrameSize.setPromptText("Enter frame size(e.g. 3)");
+
+
+        btnPagingCalculate = new Button("Calculate Hit & Miss");
+        btnPagingCalculate.setLayoutX(460);
+        btnPagingCalculate.setLayoutY(260);
+        btnPagingCalculate.setOnAction(this::handleAction);
+        btnPagingCalculate.setStyle("-fx-text-fill: white; -fx-font-weight: bold; -fx-background-color: green;");
+
+        btnResetPage = new Button("Reset All");
+        btnResetPage.setOnAction(this::handleAction);
+        btnResetPage.setLayoutX(670);
+        btnResetPage.setLayoutY(260);
+        btnResetPage.setStyle("-fx-text-fill: white; -fx-font-weight: bold; -fx-background-color: red;");
+
+        lblPageHit = new Label();
+        lblPageHit.setLayoutX(470);
+        lblPageHit.setLayoutY(360);
+        lblPageHit.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-font-family: Arial;");
+
+        lblPageMiss = new Label("");
+        lblPageMiss.setLayoutX(470);
+        lblPageMiss.setLayoutY(400);
+        lblPageMiss.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-font-family: Arial;");
+
+
         pageComboBox = new ComboBox<>();
         pageComboBox.getItems().addAll("Select any Algorithm",
                 "First In First Out", "Least Recently Used", "Optimal");
@@ -307,7 +497,8 @@ public class SchedulingSimulatorConstruction extends Application {
         pageComboBox.setLayoutY(80);
         pageComboBox.setOnAction(this::handleAction);
 
-        pagingPane.getChildren().addAll(lblHeader, btnPagingHome, pageComboBox);
+        pagingPane.getChildren().addAll(lblHeader, btnPagingHome, pageComboBox, lblRefString, fieldRefString, lblFrameSize, fieldFrameSize);
+        pagingPane.getChildren().addAll(btnPagingCalculate, btnResetPage, lblPageHit, lblPageMiss);
     }
 
     private void styleButton(Button button){
@@ -335,6 +526,9 @@ public class SchedulingSimulatorConstruction extends Application {
         else if(event.getSource() == btnPageReplacement){
             mainPane.getChildren().setAll(pagingPane);
         }
+        else if(event.getSource() == btnMemoryAllocation){
+            mainPane.getChildren().setAll(memoryAllocPane);
+        }
         else if(event.getSource() == btnHomeCPU){
             mainPane.getChildren().setAll(homePane);
             processDataList.clear();
@@ -360,6 +554,9 @@ public class SchedulingSimulatorConstruction extends Application {
             setProcessID.clear();
         }
         else if(event.getSource() == btnPagingHome){
+            mainPane.getChildren().setAll(homePane);
+        }
+        else if(event.getSource() == btnMemoryBack){
             mainPane.getChildren().setAll(homePane);
         }
 
@@ -525,6 +722,222 @@ public class SchedulingSimulatorConstruction extends Application {
             }
 
 
+        }
+        else if(event.getSource() == btnDiskReset){
+            fieldTrackRange.clear();
+            fieldTrackSequence.clear();
+            fieldHeadPointer.clear();
+            lblDiskResult.setText("");
+            lblDirections.setText("");
+            diskComboBox.getSelectionModel().select("Select Any Algorithm");
+        }
+        //Disk calculate
+        else if(event.getSource() == btnDiskCalculate){
+            String selectedAlgo = diskComboBox.getValue();
+            String enteredTrackSequence = fieldTrackSequence.getText();
+            String enteredTrackHeader = fieldHeadPointer.getText();
+            String enteredTrackRange = fieldTrackRange.getText();
+            if(enteredTrackSequence.isEmpty() || enteredTrackHeader.isEmpty() || enteredTrackRange.isEmpty()){
+                showErrorDialog("Please Enter All Necessary Data");
+                return;
+            }
+            int[] trackSequenceArray;
+            int headPointer, rangeStart, rangeEnd;
+            try{
+                //split by comma and convert to an int array
+                trackSequenceArray = Arrays.stream(enteredTrackSequence.split(","))
+                        .map(String::trim) //remove extra spaces
+                        .mapToInt(Integer::parseInt) //convert to int
+                        .toArray();
+
+                //print to verify
+                System.out.println("Track Sequence: " + Arrays.toString(trackSequenceArray));
+
+            } catch (NumberFormatException e) {
+                System.out.println("Invalid input! Please enter only numbers separated by commas.");
+                showErrorDialog("Invalid input! Please enter only numbers separated by commas.");
+                return;
+            }
+
+            try{
+                headPointer = Integer.parseInt(enteredTrackHeader);
+                System.out.println("head: " + headPointer);
+            } catch (NumberFormatException e){
+                System.out.println("Invalid input! Please enter only integer as Head Pointer.");
+                showErrorDialog("Invalid input! Please enter only integer as Head Pointer.");
+                return;
+            }
+
+            try{
+                String[] parts = enteredTrackRange.split("-");
+                if(parts.length != 2){
+                    throw new ArrayIndexOutOfBoundsException();
+                }
+                rangeStart = Integer.parseInt(parts[0]);
+                rangeEnd = Integer.parseInt(parts[1]);
+                System.out.println(rangeStart + " " + rangeEnd);
+            } catch (NumberFormatException e){
+                showErrorDialog("Invalid input! Please enter only integer as Track Range.");
+                return;
+            } catch (ArrayIndexOutOfBoundsException ex){
+                showErrorDialog("Enter Valid Track Range(e.g. 0-255)");
+                return;
+            }
+
+            if(selectedAlgo.contentEquals("FCFS")){
+                DiskClass obj = new DiskClass(trackSequenceArray, headPointer, rangeStart, rangeEnd);
+                int ans = obj.seekDistanceFCFS();
+                System.out.println("seek: " + ans);
+                lblDiskResult.setText("Total Seek Distance: " + ans);
+                String tmp = obj.getMovementDirections();
+                lblDirections.setText("Head Movement: " + tmp);
+            }
+            else if(selectedAlgo.contentEquals("SSTF")){
+                DiskClass obj = new DiskClass(trackSequenceArray, headPointer, rangeStart, rangeEnd);
+                int ans = obj.seekDistanceSSTF();
+                lblDiskResult.setText("Total Seek Distance: " + ans);
+                String tmp = obj.getMovementDirections();
+                lblDirections.setText("Head Movement: " + tmp);
+            }
+            else if(selectedAlgo.contentEquals("SCAN")){
+                DiskClass obj = new DiskClass(trackSequenceArray, headPointer, rangeStart, rangeEnd);
+                int ans = obj.seekDistanceSCAN();
+                lblDiskResult.setText("Total Seek Distance: " + ans);
+                String tmp = obj.getMovementDirections();
+                lblDirections.setText("Head Movement: " + tmp);
+            }
+            else if(selectedAlgo.contentEquals("C-SCAN")){
+                DiskClass obj = new DiskClass(trackSequenceArray, headPointer, rangeStart, rangeEnd);
+                int ans = obj.seekDistanceC_SCAN();
+                lblDiskResult.setText("Total Seek Distance: " + ans);
+                String tmp = obj.getMovementDirections();
+                lblDirections.setText("Head Movement: " + tmp);
+            }
+            else if(selectedAlgo.contentEquals("LOOK")){
+                DiskClass obj = new DiskClass(trackSequenceArray, headPointer, rangeStart, rangeEnd);
+                int ans = obj.seekDistanceLOOK();
+                lblDiskResult.setText("Total Seek Distance: " + ans);
+                String tmp = obj.getMovementDirections();
+                lblDirections.setText("Head Movement: " + tmp);
+            }
+            else if(selectedAlgo.contentEquals("C-LOOK")){
+                DiskClass obj = new DiskClass(trackSequenceArray, headPointer, rangeStart, rangeEnd);
+                int ans = obj.seekDistanceC_LOOK();
+                lblDiskResult.setText("Total Seek Distance: " + ans);
+                String tmp = obj.getMovementDirections();
+                lblDirections.setText("Head Movement: " + tmp);
+            }
+
+        }
+        else if(event.getSource() == btnMemoryReset){
+            fieldPartitionsSize.clear();
+            filedProcessSize.clear();
+            memoryComboBox.getSelectionModel().select("Select Any Algorithm");
+            lblFragmentation.setText("");
+            lblAllocation.setText("");
+        }
+        else if(event.getSource() == btnMemoryCalculate){
+            String selectedAlgo = memoryComboBox.getValue();
+            String[] enteredPartitions = fieldPartitionsSize.getText().split(",");
+            String[] enteredProcess = filedProcessSize.getText().split(",");
+            if(enteredPartitions.length < 1 || enteredProcess.length < 1){
+                showErrorDialog("Please Enter Some Valid Data!");
+                return;
+            }
+            Map<Integer, Integer> mapProcesses = new LinkedHashMap<>();
+            Map<Integer, Boolean> mapPartitions = new HashMap<>();
+            try {
+                for(int i = 0; i < enteredProcess.length; i++){
+                    mapProcesses.put(Integer.parseInt(enteredProcess[i].trim()), -1);
+                }
+            } catch (NumberFormatException e){
+                showErrorDialog("Please Enter Integer Value Only!");
+                return;
+            }
+
+            try {
+                for(int i = 0; i < enteredPartitions.length; i++){
+                    mapPartitions.put(Integer.parseInt(enteredPartitions[i].trim()), false);
+                }
+            } catch (NumberFormatException e){
+                showErrorDialog("Please Enter Integer Value Only!");
+                return;
+            }
+
+            MemoryAllocation obj = new MemoryAllocation(mapPartitions, mapProcesses);
+
+            if(selectedAlgo.contentEquals("First Fit")){
+                int ans =  obj.firstFit();
+                lblFragmentation.setText("Total Internal Fragmentation: " + ans + " Unit");
+                lblAllocation.setText("Must Waited Processes: " + obj.getWaitedProcesses());
+            }
+            else if(selectedAlgo.contentEquals("Best Fit")){
+                int ans =  obj.bestFit();
+                lblFragmentation.setText("Total Internal Fragmentation: " + ans + " Unit");
+                lblAllocation.setText("Must Waited Processes: " + obj.getWaitedProcesses());
+            }
+            else if(selectedAlgo.contentEquals("Worst Fit")){
+                int ans =  obj.worstFit();
+                lblFragmentation.setText("Total Internal Fragmentation: " + ans + " Unit");
+                lblAllocation.setText("Must Waited Processes: " + obj.getWaitedProcesses());
+            }
+
+        }
+
+        else if(event.getSource() == btnResetPage){
+            fieldRefString.clear();
+            fieldFrameSize.clear();
+            pageComboBox.getSelectionModel().select("Select any Algorithm");
+            lblPageHit.setText("");
+            lblPageMiss.setText("");
+        }
+        else if(event.getSource() == btnPagingCalculate){
+            String selectedAlgo = pageComboBox.getValue();
+            String[] enteredRefString = fieldRefString.getText().split(",");
+            int frameSize;
+            List<Integer> refStringList = new ArrayList<>();
+
+            try {
+                frameSize = Integer.parseInt(fieldFrameSize.getText());
+            } catch (NumberFormatException e){
+                showErrorDialog("Enter Integer Value as Frame Size!");
+                return;
+            }
+            if(enteredRefString.length < 1){
+                showErrorDialog("Enter Some Valid Data!");
+                return;
+            }
+            try {
+                for(String s : enteredRefString){
+                    refStringList.add(Integer.parseInt(s.trim()));
+                }
+            } catch (NumberFormatException e){
+                showErrorDialog("Enter Integer Value Only for Page Reference String!");
+                return;
+            }
+
+            PageReplacement obj = new PageReplacement(refStringList, frameSize);
+            if(selectedAlgo.contentEquals("First In First Out")){
+                int hit = obj.hitOfFIFO();
+                int miss = enteredRefString.length - hit;
+                lblPageHit.setText(String.format("Page Hit: %d,  Hit Ratio: %.3f", hit, (double) hit / enteredRefString.length));
+                lblPageMiss.setText(String.format("Page Fault: %d,  Miss Ratio: %.3f", miss, (double) miss / enteredRefString.length));
+
+            }
+            else if(selectedAlgo.contentEquals("Least Recently Used")){
+                int hit = obj.hitOfLRU();
+                int miss = enteredRefString.length - hit;
+                lblPageHit.setText(String.format("Page Hit: %d,  Hit Ratio: %.3f", hit, (double) hit / enteredRefString.length));
+                lblPageMiss.setText(String.format("Page Fault: %d,  Miss Ratio: %.3f", miss, (double) miss / enteredRefString.length));
+
+            }
+            else if(selectedAlgo.contentEquals("Optimal")){
+                int hit = obj.hitOfOptimal();
+                int miss = enteredRefString.length - hit;
+                lblPageHit.setText(String.format("Page Hit: %d,  Hit Ratio: %.3f", hit, (double) hit / enteredRefString.length));
+                lblPageMiss.setText(String.format("Page Fault: %d,  Miss Ratio: %.3f", miss, (double) miss / enteredRefString.length));
+
+            }
         }
 
         else if(event.getSource() instanceof ComboBox){
