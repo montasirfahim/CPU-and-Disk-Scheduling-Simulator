@@ -2,6 +2,7 @@
 
 This Java Swing desktop application simulates various CPU and Disk Scheduling algorithms. Users can input process details like arrival time and burst time, and the application will display results through Gantt charts, tables, and final metrics such as Average Waiting Time, Turnaround Time, etc.
 
+## Download Exe File[https://github.com/montasirfahim/CPU-and-Disk-Scheduling-Simulator/blob/main/Scheduler.exe]
 ## Features
 
 - **Algorithms Supported:**
